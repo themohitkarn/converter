@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     tesseract-ocr \
     libmagic1 \
+    python3-dev \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

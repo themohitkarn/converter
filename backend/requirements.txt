@@ -10,4 +10,5 @@ pypdf
 docx2pdf
 pandas
 openpyxl
-tesseract-ocr
+pytesseract
+qrcode
