@@ -17,7 +17,7 @@ export interface ConversionOptions {
 }
 
 class ConverterEngine {
-  private API_BASE = "http://localhost:8000";
+  private API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   /**
    * Universal SaaS-Ready Conversion

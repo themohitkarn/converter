@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: converter-api
+    env: docker
+    plan: free
+    dockerContext: backend
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jobs-db
+          property: connectionString
+      - key: REDIS_URL
+        sync: false
+        placeholder: "Optional: Connection string for Upstash Redis"
+      - key: PORT
+        value: 8000
+
+databases:
+  - name: jobs-db
+    plan: free

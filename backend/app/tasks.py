@@ -7,11 +7,26 @@ from app.celery_app import celery_app
 from app.database import SessionLocal, Job, JobStatus
 
 TEMP_DIR = os.path.join(os.getcwd(), "storage")
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Default Linux paths for Render/Docker
+TESSERACT_PATH = os.getenv("TESSERACT_PATH", "/usr/bin/tesseract")
+SOFFICE_PATH = os.getenv("SOFFICE_PATH", "soffice")
 
 def update_progress(db, job, message):
     job.progress = message
     db.commit()
+
+def cleanup_old_files():
+    """Remove files older than 1 hour from storage"""
+    try:
+        import time
+        now = time.time()
+        for f in os.listdir(TEMP_DIR):
+            f_path = os.path.join(TEMP_DIR, f)
+            if os.stat(f_path).st_mtime < now - 3600:
+                if os.path.isfile(f_path):
+                    os.remove(f_path)
+    except Exception as e:
+        print(f"Cleanup error: {e}")
 
 @celery_app.task(name="app.tasks.process_conversion")
 def process_conversion(job_id: str):
@@ -45,12 +60,12 @@ def process_conversion(job_id: str):
         # 1. Document Conversion (DOCX, XLSX, PPTX -> PDF)
         if ext in ['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt', '.rtf', '.odt']:
             update_progress(db, job, "Initializing Document Engine...")
-            soffice_path = "soffice" if os.name != 'nt' else r"C:\Program Files\LibreOffice\program\soffice.exe"
+            # Use environment-aware path
             
             update_progress(db, job, "Converting Layout (LibreOffice)...")
             # For documents, LibreOffice converts to the target_format (usually pdf)
             subprocess.run([
-                soffice_path, "--headless", "--convert-to", target_format,
+                SOFFICE_PATH, "--headless", "--convert-to", target_format,
                 "--outdir", TEMP_DIR, input_path
             ], check=True, capture_output=True)
             
@@ -129,4 +144,5 @@ def process_conversion(job_id: str):
         job.progress = f"Error: {str(e)[:50]}"
         db.commit()
     finally:
+        cleanup_old_files()
         db.close()
